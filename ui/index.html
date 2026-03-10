@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LeadFlow Assistant</title>
+<style>
+:root{--bg:#081019;--ink:#eff8ff;--muted:#b4c8de;--panel:rgba(255,255,255,.08);--line:rgba(255,255,255,.2);--brand:#51d8ff;--ok:#63f0ae;--warn:#ffb965;--danger:#ff6f8c}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:var(--ink);background:radial-gradient(circle at 15% 12%,#1f2f67 0%,transparent 38%),radial-gradient(circle at 80% 75%,#18463f 0%,transparent 42%),var(--bg)}
+.wrap{max-width:1100px;margin:28px auto;padding:0 16px}.hero,.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(8px);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.hero{padding:20px}.hero h1{margin:0}.hero p{margin:8px 0 0;color:#d8ebff}
+.grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:14px;margin-top:14px}@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{padding:14px}label{display:block;margin:8px 0 4px;color:var(--muted);font-size:12px}input,textarea,select{width:100%;padding:9px;border:1px solid var(--line);border-radius:10px;background:#f6fbff}textarea{min-height:90px}
+button{margin-top:10px;border:0;border-radius:10px;padding:10px 12px;font-weight:700;background:linear-gradient(120deg,var(--brand),#60f0c0);color:#05213a;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.s{border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;background:rgba(255,255,255,.06)}.s b{font-size:24px}
+.table{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:10px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.1);text-align:left}th{position:sticky;top:0;background:rgba(8,16,30,.92)}
+.badge{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}.hot{background:rgba(99,240,174,.2);color:#c8ffe2;border:1px solid rgba(99,240,174,.5)}.mid{background:rgba(255,185,101,.2);color:#ffe3be;border:1px solid rgba(255,185,101,.5)}.low{background:rgba(255,111,140,.2);color:#ffd1da;border:1px solid rgba(255,111,140,.5)}
+pre{white-space:pre-wrap;background:#08152d;color:#d5fff0;padding:10px;border-radius:10px;border:1px solid var(--line);min-height:100px}
+</style></head>
+<body><div class="wrap"><div class="hero"><h1>LocalBiz LeadFlow Assistant</h1><p>Webhook-ready lead capture with intent detection, scoring, and follow-up tracking for small businesses.</p></div>
+<div class="grid"><div class="card"><h3 style="margin:0">Simulate Incoming Lead</h3>
+<label>Name</label><input id="name" value="Ria Sharma"><label>Phone</label><input id="phone" value="9876543210"><label>Message</label><textarea id="msg">Need pricing details and demo by tomorrow, urgent.</textarea><button id="create">Send /webhook/lead</button><pre id="out"></pre>
+<label>Update Lead Status</label><input id="leadId" type="number" value="1"><select id="status"><option>new</option><option>contacted</option><option>qualified</option><option>closed</option></select><button id="update">Patch Status</button>
+</div>
+<div class="card"><div class="stats"><div class="s"><div>Total</div><b id="t">0</b></div><div class="s"><div>Hot Leads</div><b id="h">0</b></div><div class="s"><div>Open</div><b id="o">0</b></div></div>
+<div class="table"><table><thead><tr><th>ID</th><th>Name</th><th>Intent</th><th>Score</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table></div></div></div></div>
+<script>
+function scoreBadge(v){if(v>=80)return '<span class="badge hot">'+v+'</span>';if(v>=60)return '<span class="badge mid">'+v+'</span>';return '<span class="badge low">'+v+'</span>'}
+async function refresh(){const leads=await fetch('/leads').then(r=>r.json());const s=await fetch('/summary').then(r=>r.json());document.getElementById('t').textContent=s.total;document.getElementById('h').textContent=s.hot;document.getElementById('o').textContent=s.open;const rows=document.getElementById('rows');rows.innerHTML='';for(const l of leads){const tr=document.createElement('tr');tr.innerHTML=`<td>${l.id}</td><td>${l.name}</td><td>${l.intent}</td><td>${scoreBadge(l.score)}</td><td>${l.status}</td>`;rows.appendChild(tr)}}
+async function createLead(){const payload={name:document.getElementById('name').value,phone:document.getElementById('phone').value,message:document.getElementById('msg').value,source:'whatsapp'};const res=await fetch('/webhook/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());document.getElementById('out').textContent=JSON.stringify(res,null,2);refresh()}
+async function updateLead(){const id=document.getElementById('leadId').value;const status=document.getElementById('status').value;const res=await fetch('/leads/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}).then(r=>r.json());document.getElementById('out').textContent=JSON.stringify(res,null,2);refresh()}
+document.getElementById('create').addEventListener('click',createLead);document.getElementById('update').addEventListener('click',updateLead);refresh();
+</script></body></html>
